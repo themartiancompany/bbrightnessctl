@@ -1,0 +1,49 @@
+#!/usr/bin/env bash
+#
+# SPDX-License-Identifier: AGPL-3.0
+
+# I don't remember why
+# I had this shebang
+# so let's have it just in case
+# until next test
+#!/data/data/com.termux/files/usr/bin/env bash
+
+_bbrightnessctl() {
+  local \
+    _brightness_value="${1}" \
+    _brightnessctl_opts=() \
+    _brightnessctl_cmd=() \
+    _brightnessctl \
+    _lcd
+  _brightnessctl_opts=(
+    "$@"
+  )
+  _brightnessctl_cmd=( "$( \
+    command \
+      -v \
+      "brightnessctl")"
+  )
+  [[ "${_brightnessctl_cmd[*]}" != "" ]] && \
+    "${_brightnessctl_cmd[*]}" \
+      "${_brightnessctl_opts[@]}" && \
+    return
+  _cd="/sys/class/leds/lcd-backlight"
+  _brightness="${_lcd}/brightness"
+  _brightnessctl_cmd=(
+    "echo"
+      "${_brightness_value}" ">"
+      "${_brightness}"
+  )
+  su \
+    -c \
+    "${_brightnessctl_cmd[*]}"
+}
+
+_bbrightnessctl_opts=(
+  "$@"
+)
+
+_bbrightnessctl \
+  "${_bbrightnessctl_opts[@]}"
+
+# vim:set sw=2 sts=-1 et:
