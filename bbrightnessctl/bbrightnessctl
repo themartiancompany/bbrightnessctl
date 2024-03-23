@@ -21,7 +21,11 @@ _bbrightnessctl() {
   _brightnessctl_cmd=( "$( \
     command \
       -v \
-      "brightnessctl")"
+      "brightnessctl" \
+      "termux-brightness" | \
+      head \
+        -n \
+          1)"
   )
   [[ "${_brightnessctl_cmd[*]}" != "" ]] && \
     "${_brightnessctl_cmd[*]}" \
