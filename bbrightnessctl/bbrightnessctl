@@ -8,46 +8,255 @@
 # until next test
 #!/data/data/com.termux/files/usr/bin/env bash
 
-_bbrightnessctl() {
+_bin="$( \
+  dirname \
+    "$( \
+      command \
+        -v \
+	  "env")")"
+_lib="${_bin}/../lib"
+_share="${_bin}/../share"
+source \
+  "${_lib}/libcrash-bash/crash-bash"
+
+_root_requirements() {
+  _check_cmd \
+    "su"
+}
+
+_termux_requirements() {
+  _check_cmd \
+    "termux-brightness"
+}
+
+# shellcheck disable=SC2034
+_global_variables() {
+  brightness_value=""
+  input_command=""
+  setting_method=""
+  color=""
+  quiet=""
+}
+
+_root_brightness_set() {
   local \
-    _brightness_value="${1}" \
-    _brightnessctl_opts=() \
-    _brightnessctl_cmd=() \
-    _brightnessctl \
-    _lcd
-  _brightnessctl_opts=(
-    "$@"
-  )
-  _brightnessctl_cmd=( "$( \
-    command \
-      -v \
-      "brightnessctl" \
-      "termux-brightness" | \
-      head \
-        -n \
-          1)"
-  )
-  [[ "${_brightnessctl_cmd[*]}" != "" ]] && \
-    "${_brightnessctl_cmd[*]}" \
-      "${_brightnessctl_opts[@]}" && \
-    return
-  _cd="/sys/class/leds/lcd-backlight"
+    _value="${1}" \
+    _cmd=() \
+    _lcd \
+    _brightness
+  _lcd="/sys/class/leds/lcd-backlight"
   _brightness="${_lcd}/brightness"
-  _brightnessctl_cmd=(
+  _cmd=(
     "echo"
-      "${_brightness_value}" ">"
+      "${_value}" ">"
       "${_brightness}"
   )
   su \
     -c \
-    "${_brightnessctl_cmd[*]}"
+    "${_cmd[@]}"
 }
 
-_bbrightnessctl_opts=(
-  "$@"
-)
+_root_brightness_get() {
+  local \
+    _cmd=() \
+    _lcd \
+    _brightness
+  _lcd="/sys/class/leds/lcd-backlight"
+  _brightness="${_lcd}/brightness"
+  _cmd=(
+    "cat"
+      "${_brightness}"
+  )
+  "${_cmd[@]}"
+}
 
+_termux_brightness_set() {
+  local \
+    _value="${1}" \
+    _cmd=()
+  _cmd=(
+    "termux-brightness"
+      "${_value}"
+  )
+  "${_cmd[@]}"
+}
+
+_termux_brightness_get() {
+  _root_brightness_get
+}
+
+_brightnessctl_set() {
+  local \
+    _cmd=() \
+    _opts=(
+      "$@")
+  _cmd=(
+    "brightnessctl"
+      "set"
+      "${_brightness}"
+      "${_opts[@]}"
+  )
+  "${_cmd[@]}"
+}
+
+_brightnessctl_get() {
+  local \
+    _cmd=() \
+    _opts=(
+      "$@"
+    )
+  _cmd=(
+    "brightnessctl"
+      "get"
+      "${_brightness}"
+      "${_opts[@]}"
+  )
+  "${_cmd[@]}"
+}
+
+_auto_detect_method() {
+  local \
+    _os \
+    _method
+  _os="$( \
+    uname \
+      -o)"
+  if [[ "${_os}" == "Android" ]]; then
+    _method="termux"
+    if [[ "$(command \
+               -v \
+               "su")" ]]; then
+      _method="root"
+    fi
+  fi
+  echo \
+    "${_method}"
+}
+
+_bbrightnessctl() {
+  local \
+    _cmd="${1}" \
+    _value="${2}" \
+    _method="${3}"
+    _opts=()
+  shift \
+    3
+  _opts=(
+    "$@"
+  )
+  if [[ "${_method}" == "auto" ]]; then 
+    _method="$( \
+      _auto_detect_method)"
+  fi
+  "_${_method}_brightness_${_cmd}" \
+    "${_value}" \
+    "${_opts[*]}"
+}
+
+_set_overrides() {
+  _set_override \
+    "setting" \
+    "method" \
+    "brightnessctl"
+  if [[ -v override_color ]]; then
+    color="${override_color}"
+  elif [[ -z "${color}" ]]; then
+    color="n"
+  fi
+  if [[ -v override_quiet ]]; then
+    quiet="${override_quiet}"
+  elif [[ -z "${quiet}" ]]; then
+    quiet="y"
+  fi
+}
+
+# Show help usage, with an exit status.
+# $1: exit status number.
+_usage() {
+  local \
+    _usage_text
+  IFS='' \
+    read \
+      -r \
+      -d '' \
+      _usage_text << \
+        ENDUSAGETEXT || true
+
+Brightnessctl wrapper
+
+Usage:
+  $(_get "app" "name")
+    [options]
+    <input_command>
+    <brightness_value>
+  options:
+     -m                   Setting method (brightnessctl,
+                          root, termux)
+			  Default: $(_get "setting" "method")
+     -h                   This message.
+     -v                   Enable verbose output
+ENDUSAGETEXT
+  _printf \
+    '%s\n' \
+    "${_usage_text}"
+  exit \
+    "${1}"
+}
+
+_globals
+_global_variables
+# shellcheck disable=SC2004
+# shellcheck disable=SC2034
+while \
+  getopts \
+    'm:cvh?' \
+    arg; do
+  case \
+    "${arg}" in
+    m) override_setting_method="${OPTARG}" ;;
+    c) override_color="y" ;;
+    e) override_video_encode="y" ;;
+    v) override_quiet="n" ;;
+    h|?) _set_overrides && \
+	 _usage \
+           0 ;;
+    *)
+    _msg_error \
+      "Invalid argument '${arg}'" \
+      0 && \
+    _set_overrides && \
+    _usage \
+      1
+    ;;
+  esac
+done
+shift \
+  $(( \
+    OPTIND - 1 \
+  ))
+(( $# <= 1 )) && \
+  _usage \
+    1
+_set \
+  "input" \
+  "command" \
+  "${1}"
+_set \
+  "brightness" \
+  "value" \
+  "${2}"
+_set_overrides
+_config_user_init \
+  "bbrightnessctl"
 _bbrightnessctl \
-  "${_bbrightnessctl_opts[@]}"
+  "$(_get \
+       "input" \
+       "command")" \
+  "$(_get \
+       "brightness" \
+       "value")" \
+  "$(_get \
+       "setting" \
+       "method")"
 
 # vim:set sw=2 sts=-1 et:
