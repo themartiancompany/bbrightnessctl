@@ -48,12 +48,12 @@ _root_brightness_set() {
   _brightness="${_lcd}/brightness"
   _cmd=(
     "echo"
-      "${_value}" ">"
+      "${_value}" '>'
       "${_brightness}"
   )
   su \
     -c \
-    "${_cmd[@]}"
+    "${_cmd[*]}"
 }
 
 _root_brightness_get() {
