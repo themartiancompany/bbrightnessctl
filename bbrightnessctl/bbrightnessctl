@@ -241,10 +241,13 @@ _set \
   "input" \
   "command" \
   "${1}"
-_set \
-  "brightness" \
-  "value" \
-  "${2}"
+[[ "$(_get \
+        "input" \
+        "command")" == "set" ]] && \
+  _set \
+    "brightness" \
+    "value" \
+    "${2}"
 _set_overrides
 _config_user_init \
   "bbrightnessctl"
