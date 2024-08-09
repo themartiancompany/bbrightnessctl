@@ -67,7 +67,9 @@ _root_brightness_get() {
     "cat"
       "${_brightness}"
   )
-  "${_cmd[@]}"
+  su \
+    -c \
+    "${_cmd[*]}"
 }
 
 _termux_brightness_set() {
