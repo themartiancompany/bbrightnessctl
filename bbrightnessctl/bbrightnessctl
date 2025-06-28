@@ -1,23 +1,46 @@
 #!/usr/bin/env bash
-#
-# SPDX-License-Identifier: AGPL-3.0
 
-# I don't remember why
-# I had this shebang
-# so let's have it just in case
-# until next test
-#!/data/data/com.termux/files/usr/bin/env bash
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+#    ----------------------------------------------------------------------
+#    Copyright © 2024, 2025  Pellegrino Prevete
+#
+#    All rights reserved
+#    ----------------------------------------------------------------------
+#
+#    This program is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU Affero General Public License as published by
+#    the Free Software Foundation, either version 3 of the License, or
+#    (at your option) any later version.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU Affero General Public License for more details.
+#
+#    You should have received a copy of the GNU Affero General Public License
+#    along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 _bin="$( \
   dirname \
     "$( \
       command \
         -v \
-	  "env")")"
-_lib="${_bin}/../lib"
-_share="${_bin}/../share"
-source \
-  "${_lib}/libcrash-bash/crash-bash"
+        "env")")"
+_lib="$( \
+  realpath \
+    "${_bin}/../lib")"
+_share="$( \
+  realpath \
+    "${_bin}/../share")"
+_crash_bash="${_lib}/libcrash-bash/crash-bash"
+_libevm="${_lib}/libevm/libevm"
+_sourced \
+  "${_crash_bash}" 2>/dev/null || \
+  source \
+    "${_crash_bash}"
+_sourced \
+  "${_libevm}"
 
 _root_requirements() {
   _check_cmd \
@@ -44,16 +67,47 @@ _root_brightness_set() {
     _cmd=() \
     _lcd \
     _brightness
-  _lcd="/sys/class/leds/lcd-backlight"
-  _brightness="${_lcd}/brightness"
-  _cmd=(
-    "echo"
-      "${_value}" '>'
-      "${_brightness}"
-  )
-  su \
-    -c \
-    "${_cmd[*]}"
+  if [[ "${_os}" == "Android" ]]; then
+    _lcd="/sys/class/leds/lcd-backlight"
+    _brightness="${_lcd}/brightness"
+    _cmd=(
+      "echo"
+        "${_value}" '>'
+        "${_brightness}"
+    )
+    su \
+      -c \
+      "${_cmd[*]}"
+  _brightnessctl="$( \
+    command \
+      -v \
+      "brightnessctl")"
+  elif [[ "${_os}" == "GNU/Linux" && \
+        "${_brightnessctl}" != "" ]]; then
+    _mount_opts="remount,rw"
+    _cmd=(
+      mount
+        -o
+          "${_mount_opts}"
+        "/sys"
+    )
+    su \
+      -c \
+        "${_cmd[*]}"
+    brightnessctl \
+      set \
+        "${_brightness}"
+    _mount_opts="remount,ro"
+    _cmd=(
+      mount
+        -o
+          "${_mount_opts}"
+        "/sys"
+    )
+    su \
+      -c \
+        "${_cmd[*]}"
+  fi
 }
 
 _root_brightness_get() {
@@ -87,11 +141,13 @@ _termux_brightness_get() {
   _root_brightness_get
 }
 
-_brightnessctl_set() {
+_brightnessctl_brightness_set() {
   local \
     _cmd=() \
-    _opts=(
-      "$@")
+    _opts=()
+  _opts+=(
+    "$@"
+  )
   _cmd=(
     "brightnessctl"
       "set"
@@ -101,12 +157,13 @@ _brightnessctl_set() {
   "${_cmd[@]}"
 }
 
-_brightnessctl_get() {
+_brightnessctl_brightness_get() {
   local \
     _cmd=() \
-    _opts=(
-      "$@"
-    )
+    _opts=()
+  _opts=(
+    "$@"
+  )
   _cmd=(
     "brightnessctl"
       "get"
@@ -184,17 +241,19 @@ _usage() {
       _usage_text << \
         ENDUSAGETEXT || true
 
-Brightnessctl wrapper
+Cross-platform brightnessctl utility.
 
 Usage:
-  $(_get "app" "name")
+  ${app_name}
     [options]
     <input_command>
     <brightness_value>
+
   options:
      -m                   Setting method (brightnessctl,
                           root, termux)
-			  Default: $(_get "setting" "method")
+			  Default: ${setting_method}
+
      -h                   This message.
      -v                   Enable verbose output
 ENDUSAGETEXT
@@ -253,15 +312,12 @@ _set \
 _set_overrides
 _config_user_init \
   "bbrightnessctl"
+app_opts=(
+  "${input_command}"
+  "${brightness_value}"
+  "${setting_method}"
+)
 _bbrightnessctl \
-  "$(_get \
-       "input" \
-       "command")" \
-  "$(_get \
-       "brightness" \
-       "value")" \
-  "$(_get \
-       "setting" \
-       "method")"
+  "${app_opts[@]}"
 
 # vim:set sw=2 sts=-1 et:
