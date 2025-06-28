@@ -99,9 +99,14 @@ _root_brightness_set() {
     su \
       -c \
         "${_cmd[*]}"
-    brightnessctl \
-      set \
-        "${_value}"
+    _cmd=(
+      brightnessctl
+        set
+          "${_value}"
+    )
+    su \
+      -c \
+        "${_cmd[*]}"
     _mount_opts="remount,ro"
     _cmd=(
       mount
