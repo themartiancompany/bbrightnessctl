@@ -233,6 +233,7 @@ _set_overrides() {
 # $1: exit status number.
 _usage() {
   local \
+    _exit_code="${1}" \
     _usage_text
   IFS='' \
     read \
@@ -261,7 +262,7 @@ ENDUSAGETEXT
     '%s\n' \
     "${_usage_text}"
   exit \
-    "${1}"
+    "${_exit_code}"
 }
 
 _globals
@@ -274,14 +275,19 @@ while \
     arg; do
   case \
     "${arg}" in
-    m) override_setting_method="${OPTARG}" ;;
-    c) override_color="y" ;;
-    e) override_video_encode="y" ;;
-    v) override_quiet="n" ;;
-    h|?) _set_overrides && \
-	 _usage \
-           0 ;;
-    *)
+    m) \
+      override_setting_method="${OPTARG}" ;;
+    c) \
+      override_color="y" ;;
+    e) \
+      override_video_encode="y" ;;
+    v) \
+      override_quiet="n" ;;
+    h|?) \
+      _set_overrides && \
+      _usage \
+        0 ;;
+    *) \
     _msg_error \
       "Invalid argument '${arg}'" \
       0 && \
@@ -295,23 +301,21 @@ shift \
   $(( \
     OPTIND - 1 \
   ))
-(( $# < 1 )) && \
+if (( $# < 1 )); then
   _usage \
     1
-_set \
-  "input" \
-  "command" \
-  "${1}"
-[[ "$(_get \
-        "input" \
-        "command")" == "set" ]] && \
-  _set \
-    "brightness" \
-    "value" \
-    "${2}"
+fi
+input_command="${1}"
+if [[ "${input_command}" == "set" ]]; then
+  if (( $# < 2 )); then
+    _usage \
+      1
+  fi
+  brightness_value="${2}"
+fi
 _set_overrides
 _config_user_init \
-  "bbrightnessctl"
+  "${app_name}"
 app_opts=(
   "${input_command}"
   "${brightness_value}"
