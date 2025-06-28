@@ -170,7 +170,7 @@ _brightnessctl_brightness_set() {
       "set"
       "${_opts[@]}"
   )
-  "${_cmd[@]}" || \
+  "${_cmd[@]}" 2&>/dev/null || \
   _root_brightness_set \
     "${_opts[@]}"
 }
