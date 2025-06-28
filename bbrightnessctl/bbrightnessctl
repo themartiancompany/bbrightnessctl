@@ -101,7 +101,7 @@ _root_brightness_set() {
         "${_cmd[*]}"
     brightnessctl \
       set \
-        "${_brightness}"
+        "${_value}"
     _mount_opts="remount,ro"
     _cmd=(
       mount
