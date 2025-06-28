@@ -167,7 +167,6 @@ _brightnessctl_brightness_get() {
   _cmd=(
     "brightnessctl"
       "get"
-      "${_brightness}"
       "${_opts[@]}"
   )
   "${_cmd[@]}"
