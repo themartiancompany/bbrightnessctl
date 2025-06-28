@@ -67,10 +67,15 @@ _root_brightness_set() {
     _cmd=() \
     _lcd \
     _brightness \
+    _brightnessctl \
     _os
   _os="$( \
     uname \
       -o)"
+  _brightnessctl="$( \
+    command \
+      -v \
+      "brightnessctl")"
   if [[ "${_os}" == "Android" ]]; then
     _lcd="/sys/class/leds/lcd-backlight"
     _brightness="${_lcd}/brightness"
@@ -82,12 +87,8 @@ _root_brightness_set() {
     su \
       -c \
       "${_cmd[*]}"
-  _brightnessctl="$( \
-    command \
-      -v \
-      "brightnessctl")"
   elif [[ "${_os}" == "GNU/Linux" && \
-        "${_brightnessctl}" != "" ]]; then
+          "${_brightnessctl}" != "" ]]; then
     _mount_opts="remount,rw"
     _cmd=(
       mount
