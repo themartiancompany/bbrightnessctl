@@ -22,6 +22,7 @@
 # bbrightnessctl
 
 Cross-platform utility for setting the brightness.
+
 Core component of
 [SissystemD](
   https://github.com/themartiancompany/sissystemd).
