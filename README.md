@@ -37,7 +37,7 @@ make \
   install
 ```
 
-B-brightness control has been published officially on the
+B-brightness control has been published officially on
 the uncensorable, undeletable
 [Ur](
   https://github.com/themartiancompany/ur)
